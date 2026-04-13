@@ -18,7 +18,7 @@ module Debounce_button (
         .d(q[0]), 
         .q(q[1])
     );
-    assign bt2_set = q[0] & ~q[1];
+    assign bt1_select = ~q[0] & q[1];
 
     //button2
     Q_FF uut3 (
@@ -33,7 +33,7 @@ module Debounce_button (
         .d(q[2]), 
         .q(q[3])
     );
-    assign bt1_select = q[2] & ~q[3];
+    assign bt2_set = ~q[2] & q[3];
 endmodule
 
 //100Hz
@@ -65,7 +65,7 @@ module Q_FF(
     end
 endmodule 
 
-module switch_posedge #(parameter WIDTH = 2)(
+module switch_posedge #(parameter WIDTH = 3)(
     input wire [WIDTH-1:0] switch, 
     input wire clk, rst_n,
     output wire sw4_alarm, 
