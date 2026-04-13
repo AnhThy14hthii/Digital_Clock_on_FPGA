@@ -244,29 +244,32 @@ module count_up #(parameter WIDTH = 3 )(
     localparam STOP = 2'b10;
     always@(posedge clk or negedge rst_n) begin
         if(!rst_n) current <= IDLE;
-        else if(stage == COUNTUP)begin
+        else if(stage == COUNTUP) begin
             current <= next;
         end
     end
     always@(*) begin
         if(stage == COUNTDOWN) begin
-            case (current)
-                IDLE: if(bt2_set) next = RUN;
-                        else next = IDLE;
-                RUN: if(bt2_set) next = STOP;
-                        else next = RUN;
-                STOP: if(bt2_set) next = RUN; 
-                        else next = STOP;
-                default: next = IDLE;
-            endcase
+            next = current;
+            if(stage == COUNTUP) begin
+                case (current)
+                    IDLE: if(bt2_set) next = RUN;
+                            else next = IDLE;
+                    RUN: if(bt2_set) next = STOP;
+                            else next = RUN;
+                    STOP: if(bt2_set) next = RUN; 
+                            else next = STOP;
+                    default: next = IDLE;
+                endcase
+            end
         end
     end 
     always@(posedge clk_1Hz or negedge rst_n) begin
         if(!rst_n) begin 
             min_cnt_up <= 6'd0; 
             sec_cnt_up <= 6'd0;
-        end else if(stage == COUNTDOWN) begin
-                else if(current == RUN) begin
+        end else if(stage == COUNTUP) begin
+                if(current == RUN) begin
                 if(sec_cnt_up >= 6'd59) begin 
                     sec_cnt_up <= 6'd0; 
                     if(min_cnt_up >= 6'd59 ) begin 
@@ -279,7 +282,7 @@ module count_up #(parameter WIDTH = 3 )(
     end
 endmodule
 
-module DATAPATH #(parameter WIDTH = 3)(
+/*module DATAPATH #(parameter WIDTH = 3)(
     input wire clk, rst_n,
     input wire [WIDTH-1: 0] stage; 
     output reg 
@@ -312,4 +315,4 @@ module DATAPATH #(parameter WIDTH = 3)(
     count_up dut1 ( .clk(), .clk_1Hz(), .rst_n(), .bt2_set()
     , .min_cnt_up(), .sec_cnt_up());
     
-endmodule 
+endmodule */
