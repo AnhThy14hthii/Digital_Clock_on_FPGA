@@ -5,6 +5,16 @@ module FSM #(parameter WIDTH = 3 )(
     input wire alarm_match, snooze_match, 
     output reg [WIDTH-1: 0] state
 ); 
+
+     //state of FSM
+    localparam IDLE = 3'b000;
+    localparam SETTIME = 3'b001; 
+    localparam SETALARM = 3'b010;
+    localparam COUNTDOWN = 3'b011; 
+    localparam COUNTUP = 3'b100; 
+    localparam RINGING = 3'b101; 
+    localparam SNOOZE = 3'b110;
+    
     //counter for button 1
     reg [2:0] cnt_bt1;
     always @(posedge clk or negedge rst_n) begin
@@ -20,14 +30,6 @@ module FSM #(parameter WIDTH = 3 )(
         end
     end
 
-    //state of FSM
-    localparam IDLE = 3'b000;
-    localparam SETTIME = 3'b001; 
-    localparam SETALARM = 3'b010;
-    localparam COUNTDOWN = 3'b011; 
-    localparam COUNTUP = 3'b100; 
-    localparam RINGING = 3'b101; 
-    localparam SNOOZE = 3'b110;
 
     //time out 60s
     reg [12:0] time_out;
