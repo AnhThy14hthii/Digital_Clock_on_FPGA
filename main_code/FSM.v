@@ -3,14 +3,14 @@ module FSM #(parameter WIDTH = 3 )(
     input wire bt1_select, bt2_set, 
     input wire sw5_snooze, sw4_alarm,
     input wire alarm_match, snooze_match, 
-    output reg [WIDTH-1: 0] stage
+    output reg [WIDTH-1: 0] state
 ); 
     //counter for button 1
     reg [2:0] cnt_bt1;
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) cnt_bt1 <= 3'd0;
         else begin
-            if(stage != IDLE) cnt_bt1 <= 3'd0;
+            if(state != IDLE) cnt_bt1 <= 3'd0;
             else begin
                 if(bt1_select) begin
                     if(cnt_bt1 >= 3'd4) cnt_bt1 <= 3'd0; 
@@ -42,14 +42,15 @@ module FSM #(parameter WIDTH = 3 )(
     //fsm 
     reg [WIDTH-1:0] next_state;
     always@(posedge clk or negedge rst_n) begin
-        if(!rst_n) stage <= IDLE;
-        else stage <= next_state;
+        if(!rst_n) state <= IDLE;
+        else state <= next_state;
     end
 
     always@(*) begin
        if (alarm_match) next_state = RINGING;
        else begin
-            case(stage)
+            next_state = state;
+            case(state)
                 IDLE: begin
                     if(bt2_set && (cnt_bt1==3'd1)) next_state = SETTIME; 
                     else if (bt2_set && (cnt_bt1==3'd2)) next_state = SETALARM; 
