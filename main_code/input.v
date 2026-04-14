@@ -1,53 +1,33 @@
 module Debounce_button (
-    input wire clk, rst_n,
+    input wire clk_100hz, rst_n,
     input wire[1:0] bt, 
     output wire bt2_set,
     output wire bt1_select
 );
     wire [3:0] q;
     //button1 
-    Q_FF uut1 (
-        .clk(clk), 
-        .rst_n(rst_n), 
-        .d(bt[0]), 
-        .q(q[0])
-    );
-    Q_FF uut2 (
-        .clk(clk), 
-        .rst_n(rst_n), 
-        .d(q[0]), 
-        .q(q[1])
-    );
+    Q_FF uut1 (.clk_100hz(clk_100hz), .rst_n(rst_n), .d(bt[0]), .q(q[0]));
+    Q_FF uut2 (.clk_100hz(clk_100hz), .rst_n(rst_n), .d(q[0]), .q(q[1]));
     assign bt1_select = ~q[0] & q[1];
 
     //button2
-    Q_FF uut3 (
-        .clk(clk), 
-        .rst_n(rst_n), 
-        .d(bt[1]), 
-        .q(q[2])
-    );
-    Q_FF uut4 (
-        .clk(clk), 
-        .rst_n(rst_n), 
-        .d(q[2]), 
-        .q(q[3])
-    );
+    Q_FF uut3 (.clk_100hz(clk_100hz), .rst_n(rst_n), .d(bt[1]), .q(q[2]));
+    Q_FF uut4 (.clk_100hz(clk_100hz), .rst_n(rst_n), .d(q[2]), .q(q[3]));
     assign bt2_set = ~q[2] & q[3];
 endmodule
 
 //100Hz
-module clock_divider#(parameter  DIV = 250000)(
-    input wire clk_in, rst_n,
-    output reg clk
+module clock_divider_param #(parameter  DIV = 250000)(
+    input wire clk, rst_n,
+    output reg clk_100hz
 );
     reg [18:0] clock_cnt;
-    always @(posedge clk_in or negedge rst_n) begin
+    always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
-          clk <= 0;
+          clk_100hz <= 0;
           clock_cnt <= 0;
         end else if(clock_cnt == DIV-1) begin 
-            clk <= ~clk;
+            clk_100hz <= ~clk_100hz;
             clock_cnt <= 0;
           end else begin
             clock_cnt <= clock_cnt + 1;
@@ -56,10 +36,10 @@ module clock_divider#(parameter  DIV = 250000)(
 endmodule
 
 module Q_FF(
-    input clk, rst_n, d,
+    input clk_100hz, rst_n, d,
     output reg q
 ); 
-    always @(posedge clk or negedge rst_n) begin 
+    always @(posedge clk_100hz or negedge rst_n) begin 
         if(!rst_n) q<=0; 
         else q <= d;
     end
@@ -67,13 +47,13 @@ endmodule
 
 module switch_posedge #(parameter WIDTH = 3)(
     input wire [WIDTH-1:0] switch, 
-    input wire clk, rst_n,
+    input wire clk_100hz, rst_n,
     output wire sw4_alarm, 
     output wire sw5_snooze, 
     output wire sw6_start_cdwn
 );
     reg [WIDTH-1:0] delay; 
-    always@(posedge clk or negedge rst_n)begin
+    always@(posedge clk_100hz or negedge rst_n)begin
       if(!rst_n) delay <= 0;
       else begin 
         delay <= switch;
