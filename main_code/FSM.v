@@ -1,5 +1,6 @@
 module FSM #(parameter WIDTH = 3 )(
-    input wire clk, rst_n, 
+    input wire clk, rst_n, clk_100hz,
+    input wire tick_1Hz,
     input wire bt1_select, bt2_set, 
     input wire sw5_snooze, sw4_alarm,
     input wire alarm_match, snooze_match, 
@@ -17,7 +18,7 @@ module FSM #(parameter WIDTH = 3 )(
     
     //counter for button 1
     reg [2:0] cnt_bt1;
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk_100hz or negedge rst_n) begin
         if(!rst_n) cnt_bt1 <= 3'd0;
         else begin
             if(state != IDLE) cnt_bt1 <= 3'd0;
@@ -35,7 +36,7 @@ module FSM #(parameter WIDTH = 3 )(
     reg [12:0] time_out;
     always@(posedge clk or negedge rst_n) begin
         if(!rst_n) time_out <= 13'd0; 
-        else begin
+        else if(tick_1Hz) begin
             if(alarm_match) time_out <= time_out + 1'd1;
             else time_out <= 13'd0;
         end
