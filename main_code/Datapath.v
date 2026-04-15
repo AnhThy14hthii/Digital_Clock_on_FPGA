@@ -100,27 +100,7 @@ module set_min_sec(
         end
     end
 endmodule
-//divider clock for counter the real time
-module Clock_1Hz(
-    input wire clk_100hz, rst_n,
-    output reg clk_1Hz,
-    output reg tick_1Hz
-);
-    reg [5:0] count_1Hz;
-    always@(posedge clk_100hz or negedge rst_n) begin
-        if(!rst_n) begin 
-            clk_1Hz <= 1'b0; 
-            count_1Hz <= 6'd0;
-            tick_1Hz <= 1'b0;
-        end else if(count_1Hz == 6'd49) begin
-                count_1Hz <= 6'd0;
-                clk_1Hz <= ~clk_1Hz;
-                tick_1Hz <= 1'b1;
-        end else begin count_1Hz <= count_1Hz + 6'd1;
-                tick_1Hz <= 1'b1;
-        end
-    end
-endmodule 
+
 // counter the real time and set enable 
 module counter_realtime (
     input wire clk, tick_1Hz, rst_n,
@@ -155,21 +135,21 @@ endmodule
 module alarm (
     input wire clk, rst_n,
     input wire [5:0] set1_hour, set1_min,
-    input wire [5:0] hour_real, min_real,
+    input wire [5:0] hour_real, min_real,sec_real,
     input wire enable_set_alarm,
     output reg [5:0] hour_alarm, min_alarm,
     output wire alarm_match
 );
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
-            hour_alarm <= 6'd0;
+            hour_alarm <= 6'd12;
             min_alarm <= 6'd0;
         end else if (enable_set_alarm) begin
             hour_alarm <= set1_hour;
             min_alarm <= set1_min;
         end 
     end
-    assign alarm_match = (rst_n) && (hour_alarm == hour_real) && (min_alarm == min_real);
+    assign alarm_match = (rst_n) && (hour_alarm == hour_real) && (min_alarm == min_real) && (sec_real == 6'd0);
 endmodule
 
 module snooze(
@@ -207,7 +187,6 @@ module count_down (
     output reg [5:0] min_cnt_down, sec_cnt_down,
     output wire countdown_done
 );
-    //hour gán cho min, min gán cho sec
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             min_cnt_down <= 6'd0;
@@ -267,8 +246,10 @@ module count_up (
         if(!rst_n) begin 
             min_cnt_up <= 6'd0; 
             sec_cnt_up <= 6'd0;
-        end else if(enable_count_up && tick_1Hz) begin
-                if(current == RUN) begin
+        end else if (!enable_count_up || current == IDLE) begin
+            min_cnt_up <= 6'd0; 
+            sec_cnt_up <= 6'd0;
+        end else if(tick_1Hz && (current == RUN) ) begin
                 if(sec_cnt_up >= 6'd59) begin 
                     sec_cnt_up <= 6'd0; 
                     if(min_cnt_up >= 6'd59 ) begin 
@@ -276,8 +257,7 @@ module count_up (
                         sec_cnt_up <= 6'd59;
                     end else min_cnt_up <= min_cnt_up + 6'd1;
                 end else sec_cnt_up <= sec_cnt_up + 6'd1;
-            end 
-        end
+        end 
     end
 endmodule
 
@@ -285,7 +265,7 @@ module control #(parameter WIDTH = 3)(
     input wire [WIDTH-1: 0] state, 
     input wire [5:0] set1_hour, set1_min,
     input wire [5:0] hour_alarm, min_alarm,
-    input wire [5:0] hour_real, min_real, sec_real,
+    input wire [5:0] hour_real, min_real,
     input wire [5:0] min_cnt_down, sec_cnt_down,
     input wire [5:0] min_cnt_up, sec_cnt_up, 
     output reg [5:0] bin1, bin2,
@@ -354,13 +334,12 @@ endmodule
 module DATAPATH(
     input wire clk, rst_n,
     input wire bt2_set,
-    input wire clk_100hz,
+    input wire tick_1Hz,
     input wire sw5_snooze, sw6_start_cdwn,
     input wire sw2_updown, sw3_set_hourmin,
     input wire [2:0] state,
     output wire alarm_match, snooze_match,
-    output reg [5:0] bin1, bin2,
-    output wire tick_1Hz
+    output reg [5:0] bin1, bin2
 );
     wire enable_count_down, enable_count_up, enable_snooze;
     wire enable_set_alarm, enable_set_time;
@@ -371,7 +350,6 @@ module DATAPATH(
     wire [5:0] set2_min, set2_sec;
     wire [5:0] min_cnt_down, sec_cnt_down;
     wire [5:0] min_cnt_up, sec_cnt_up;
-    wire clk_1Hz;
     wire countdown_done;
     
 
@@ -379,13 +357,10 @@ module DATAPATH(
     ,.sw3_set_hourmin(sw3_set_hourmin), .set1_hour(set1_hour), .set1_min(set1_min));
     set_min_sec uut_setms (.clk(clk),.rst_n(rst_n),.enable_set_ms(enable_set_ms),.bt2_set(bt2_set),.sw2_updown(sw2_updown),
     .sw3_set_hourmin(sw3_set_hourmin),.set2_min(set2_min),.set2_sec(set2_sec));
-
-    Clock_1Hz uut_1Hz (.clk_100hz(clk_100hz), .rst_n(rst_n), .clk_1Hz (clk_1Hz),.tick_1Hz(tick_1Hz));
-
     counter_realtime uut_realtime (.clk(clk),.rst_n(rst_n),.tick_1Hz(tick_1Hz),.set1_hour(set1_hour),.set1_min(set1_min),
     .enable_set_time(enable_set_time),.hour_real(hour_real),.min_real(min_real),.sec_real(sec_real));
 
-    alarm uut_alarm (.clk(clk),.rst_n(rst_n),.set1_hour(set1_hour),.set1_min(set1_min),
+    alarm uut_alarm (.clk(clk),.rst_n(rst_n),.set1_hour(set1_hour),.set1_min(set1_min),.sec_real(sec_real),
     .hour_real(hour_real),.min_real(min_real),.enable_set_alarm(enable_set_alarm),.alarm_match(alarm_match),.hour_alarm(hour_alarm),.min_alarm(min_alarm));
     snooze uut_snooze (.clk(clk),.rst_n(rst_n),.enable_snooze(enable_snooze),.sw5_snooze(sw5_snooze),
     .hour_real(hour_real),.min_real(min_real),.sec_real(sec_real),.snooze_match(snooze_match));
@@ -395,7 +370,7 @@ module DATAPATH(
     .min_cnt_up(min_cnt_up),.sec_cnt_up(sec_cnt_up));
 
     control #(.WIDTH(3)) uut_control (.state(state),.set1_hour(set1_hour),.set1_min(set1_min),.hour_alarm(hour_alarm),.min_alarm(min_alarm),
-    .hour_real(hour_real),.min_real(min_real),.sec_real(sec_real),.min_cnt_down(min_cnt_down),.sec_cnt_down(sec_cnt_down),.enable_set_alarm(enable_set_alarm),
+    .hour_real(hour_real),.min_real(min_real),.min_cnt_down(min_cnt_down),.sec_cnt_down(sec_cnt_down),.enable_set_alarm(enable_set_alarm),
     .min_cnt_up(min_cnt_up),.sec_cnt_up(sec_cnt_up),.bin1(bin1),.bin2(bin2),.enable_set_hm(enable_set_hm),.enable_set_ms(enable_set_ms),
     .enable_set_time(enable_set_time),.enable_snooze(enable_snooze),.enable_count_down(enable_count_down),.enable_count_up(enable_count_up));
  
