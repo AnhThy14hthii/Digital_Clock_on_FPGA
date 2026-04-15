@@ -1,5 +1,5 @@
 module FSM #(parameter WIDTH = 3 )(
-    input wire clk, rst_n, clk_100hz,
+    input wire clk, rst_n,
     input wire tick_1Hz,
     input wire bt1_select, bt2_set, 
     input wire sw5_snooze, sw4_alarm,
@@ -18,7 +18,7 @@ module FSM #(parameter WIDTH = 3 )(
     
     //counter for button 1
     reg [2:0] cnt_bt1;
-    always @(posedge clk_100hz or negedge rst_n) begin
+    always @(posedge clk or negedge rst_n) begin
         if(!rst_n) cnt_bt1 <= 3'd0;
         else begin
             if(state != IDLE) cnt_bt1 <= 3'd0;
@@ -36,10 +36,11 @@ module FSM #(parameter WIDTH = 3 )(
     reg [12:0] time_out;
     always@(posedge clk or negedge rst_n) begin
         if(!rst_n) time_out <= 13'd0; 
-        else if(tick_1Hz) begin
-            if(alarm_match) time_out <= time_out + 1'd1;
-            else time_out <= 13'd0;
-        end
+        else if(state == RINGING) begin
+            if(tick_1Hz) begin
+                time_out <= time_out + 1'b1;
+            end 
+        end else time_out <= 1'b0;
     end
 
     //fsm 
@@ -50,12 +51,11 @@ module FSM #(parameter WIDTH = 3 )(
     end
 
     always@(*) begin
-       if (alarm_match) next_state = RINGING;
-       else begin
             next_state = state;
             case(state)
                 IDLE: begin
-                    if(bt2_set && (cnt_bt1==3'd1)) next_state = SETTIME; 
+                    if (alarm_match) next_state = RINGING;
+                    else if(bt2_set && (cnt_bt1==3'd1)) next_state = SETTIME; 
                     else if (bt2_set && (cnt_bt1==3'd2)) next_state = SETALARM; 
                     else if (bt2_set && (cnt_bt1== 3'd3)) next_state = COUNTDOWN;
                     else if (bt2_set && (cnt_bt1==3'd4)) next_state = COUNTUP;
@@ -84,6 +84,5 @@ module FSM #(parameter WIDTH = 3 )(
                 end
                 default: next_state = IDLE;
             endcase
-       end
-    end 
+        end
 endmodule 
