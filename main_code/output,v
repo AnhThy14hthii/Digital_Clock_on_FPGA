@@ -1,0 +1,92 @@
+module display_unit (
+    input wire clk,
+    input wire tick_1kHz,
+    input wire rst_n,
+    input wire [5:0] bin1, bin2,
+    output wire [6:0] seg,
+    output wire [3:0] anode
+);
+    wire [3:0] b1_tens, b1_ones;
+    wire [3:0] b2_tens, b2_ones;
+    reg [3:0] bcd_to_decode;
+    reg [2:0] scan_cnt;
+    assign b1_tens = bin1 / 10;
+    assign b1_ones = bin1 % 10;
+    assign b2_tens = bin2 / 10;
+    assign b2_ones = bin2 % 10;
+    reg [3:0] anode_reg;
+assign anode = anode_reg;
+
+   always @ (posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        scan_cnt <= 3'b000; 
+    end
+    else if (tick_1kHz) begin
+        scan_cnt <= scan_cnt + 1'b1;
+    end
+end
+
+    always @(*) begin
+         case (scan_cnt)
+            3'b001: begin bcd_to_decode = b1_tens; anode_reg = 4'b1000; end 
+            3'b010: begin bcd_to_decode = b1_ones; anode_reg = 4'b0100; end 
+            3'b011: begin bcd_to_decode = b2_tens; anode_reg = 4'b0010; end 
+            3'b100: begin bcd_to_decode = b2_ones; anode_reg = 4'b0001; end 
+            default: begin bcd_to_decode = 4'h0; anode_reg = 4'b0000; end
+        endcase
+    end 
+
+    SevenSegDecoder decoder_0(
+        .bin_in(bcd_to_decode),
+        .seg_out(seg)
+    );
+endmodule
+
+module SevenSegDecoder (
+    input wire [3:0] bin_in,    
+    output reg [6:0] seg_out 
+);
+    always @(*) begin
+        case (bin_in)
+            4'h0: seg_out = 7'b1000000; 4'h1: seg_out = 7'b1111001; 
+            4'h2: seg_out = 7'b0100100; 4'h3: seg_out = 7'b0110000; 
+            4'h4: seg_out = 7'b0011001; 4'h5: seg_out = 7'b0010010; 
+            4'h6: seg_out = 7'b0000010; 4'h7: seg_out = 7'b1111000; 
+            4'h8: seg_out = 7'b0000000; 4'h9: seg_out = 7'b0010000; 
+            default: seg_out = 7'b1111111; 
+        endcase
+    end
+endmodule
+
+module led (
+    input wire clk,
+    input wire rst_n,
+    input wire [2:0] state,
+    output reg [6:0] led 
+);
+    localparam IDLE      = 3'b000;
+    localparam SETTIME   = 3'b001;
+    localparam SETALARM  = 3'b010;
+    localparam COUNTDOWN = 3'b011;
+    localparam COUNTUP   = 3'b100;   
+    localparam RINGING   = 3'b101;
+    localparam SNOOZE    = 3'b110;
+
+    always @ (posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            led <= 7'b0000000;
+        end
+        else begin
+            case (state)
+                IDLE:      led <= 7'b0000001;
+                SETTIME:   led <= 7'b0000011;
+                SETALARM:  led <= 7'b0000111; 
+                COUNTDOWN: led <= 7'b1111000;
+                COUNTUP:   led <= 7'b0001111;
+                RINGING:   led <= 7'b1111111;
+                SNOOZE:    led <= 7'b1010101;
+                default:   led <= 7'b0000000;
+            endcase
+        end
+    end
+endmodule
