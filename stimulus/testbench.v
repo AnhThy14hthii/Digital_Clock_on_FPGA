@@ -6,12 +6,13 @@ module testbench();
     reg [1:0] bt;
     reg [2:0] switch;
     reg sw2_updown, sw3_set_hourmin;
-    wire [5:0] bin1, bin2;
-
+    wire [6:0] seg0, seg1;
+    wire [3:0] anode;
+    wire [6:0] led;
 
     always #20 clk = ~clk; //T=20ns, f=50MHz
-    top #(.param_100Hz(10),.param_1Hz(100)) uut_top (.clk(clk), .rst_n(rst_n), .bt(bt), .switch(switch) ,.sw2_updown(sw2_updown),
-    .sw3_set_hourmin(sw3_set_hourmin),.bin1(bin1),.bin2(bin2));
+    top #(.param_1kHz(1),.param_100Hz(10),.param_1Hz(100)) uut_top (.clk(clk), .rst_n(rst_n), .bt(bt), .switch(switch) ,.sw2_updown(sw2_updown),
+    .sw3_set_hourmin(sw3_set_hourmin),.seg(seg),.anode(anode),.led(led));
 
     task press_bt1;
         begin
@@ -140,26 +141,86 @@ module testbench();
     //task test snooze
     task test_snooze;
         begin
-            repeat(200) @(posedge clk);
-            @(negedge clk);
-            switch[1] = 1'b1;
-            repeat(50) @(posedge clk);
-            //force time
+            repeat(2) press_bt1;
+            press_bt2;
+            
+            // HOUR
+                @(negedge clk);
+                sw3_set_hourmin = 1'b0;
+                // increase hour to 6
+                sw2_updown = 1'b1;
+                repeat(50) @(posedge clk);
+                repeat(7) press_bt2;
+            // MIN 
+                repeat(70) @(posedge clk);
+                sw3_set_hourmin = 1'b1;
+                repeat(50) @(posedge clk);
+                repeat(3) press_bt2;
+
+            press_bt1;
+
             @(negedge clk);
             force uut_top.uut_datapath.uut_realtime.hour_real = 6'd6;
-            force uut_top.uut_datapath.uut_realtime.min_real = 6'd9;
-            force uut_top.uut_datapath.uut_realtime.sec_real = 6'd59;
+            force uut_top.uut_datapath.uut_realtime.min_real = 6'd4;
+            force uut_top.uut_datapath.uut_realtime.sec_real = 6'd58;
+            repeat(70) @(posedge clk);
 
-            repeat(50) @(posedge clk); 
-            force uut_top.uut_datapath.uut_realtime.sec_real = 6'd0;
 
             release uut_top.uut_datapath.uut_realtime.hour_real;
             release uut_top.uut_datapath.uut_realtime.min_real;
             release uut_top.uut_datapath.uut_realtime.sec_real;
+            
+        
+            repeat(1000) @(posedge clk);
+            wait(uut_top.uut_datapath.uut_realtime.sec_real == 6'd3);
+            switch[1] = 1'b1;
+            repeat(1000) @(posedge clk);
+            @(negedge clk);
+            force uut_top.uut_datapath.uut_realtime.hour_real = 6'd6;
+            force uut_top.uut_datapath.uut_realtime.min_real = 6'd10;
+            force uut_top.uut_datapath.uut_realtime.sec_real = 6'd0;
+            repeat(70) @(posedge clk);
+            release uut_top.uut_datapath.uut_realtime.hour_real;
+            release uut_top.uut_datapath.uut_realtime.min_real;
+            release uut_top.uut_datapath.uut_realtime.sec_real;
 
-            wait(uut_top.snooze_match == 1'b1);
         end
     endtask
+
+    task count_down;
+    begin
+        repeat (3)press_bt1; 
+        press_bt2;
+            
+        // MIN
+            @(negedge clk);
+            sw3_set_hourmin = 1'b0;
+            // increase hour to 4
+            sw2_updown = 1'b1;
+            repeat(50) @(posedge clk);
+            repeat(4) press_bt2;
+        // SEC
+            repeat(70) @(posedge clk);
+            sw3_set_hourmin = 1'b1;
+            repeat(50) @(posedge clk);
+            repeat(3) press_bt2;
+
+            repeat(100) @(posedge clk);
+            switch[2] = 1'b1;
+            repeat(15000) @(posedge clk);
+         @(negedge clk);
+            force uut_top.uut_datapath.uut_cntdown.sec_cnt_down = 6'd0;
+            force uut_top.uut_datapath.uut_cntdown.min_cnt_down = 6'd3;
+            repeat(70) @(posedge clk);
+
+
+            release uut_top.uut_datapath.uut_cntdown.sec_cnt_down;
+            release uut_top.uut_datapath.uut_cntdown.min_cnt_down;
+            
+            repeat(1000) @(posedge clk);
+    end
+    endtask
+
 
     task count_up;
         begin
@@ -192,21 +253,26 @@ module testbench();
         #100 rst_n = 1'b1;
         repeat(300) @(posedge clk);
 
-        //CASE1: SETTIME and SETALARM with timeout
+        // CASE1: SETTIME and SETALARM with timeout
         // test_set_time();
         // repeat(1000) @(posedge clk);
 
         // test_set_alarm();
         // repeat(1000) @(posedge clk);
 
-        //CASE2: SETALARM WITH SW4_ALARM
+        // CASE2: SETALARM WITH SW4_ALARM
         // test_sw4_alarm();
         // repeat(1000) @(posedge clk);
 
+        //CASE3: SNOOZE
+        // test_snooze();
+        // repeat(1000) @(posedge clk);
 
-        //CASE5:countup
-        count_up();
-        repeat(1000) @(posedge clk);
+        //CASE4: COUNTDOWN
+        count_down();
+        // CASE5:COUNTUP
+        // count_up();
+        // repeat(1000) @(posedge clk);
 
         $finish;
     end
