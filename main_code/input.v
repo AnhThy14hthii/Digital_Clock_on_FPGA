@@ -33,31 +33,41 @@ endmodule
 
 //tick_100Hz and tick 1Hz
 module clock_divider_param #(
-    parameter param_100Hz = 500000, 
+    parameter param_1kHz = 50_000,
+    parameter param_100Hz = 10, 
     parameter param_1Hz = 100)(
     input wire clk, rst_n,
     output reg tick_100Hz, 
-    output reg tick_1Hz
+    output reg tick_1Hz,
+    output reg tick_1kHz
 );
-    reg [18:0] count_100Hz;
+    reg [15:0] count_1kHz;
+    reg [3:0] count_100Hz;
     reg [6:0] count_1Hz;
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
-            tick_100Hz <= 1'b0;
-            count_100Hz <= 1'b0;
-            tick_1Hz <= 1'b0;
-            count_1Hz <= 1'b0;
+            tick_1kHz <= 0;
+            count_1kHz <= 0;
+            tick_100Hz <= 0;
+            count_100Hz <= 0;
+            tick_1Hz <= 0;
+            count_1Hz <= 0;
         end else begin
-            tick_100Hz <= 1'b0; 
-            tick_1Hz <= 1'b0;
-            if(count_100Hz == param_100Hz -1) begin
-                count_100Hz <= 18'd0;
-                tick_100Hz <= 1'b1;
-                    if(count_1Hz == param_1Hz -1)begin
-                        count_1Hz <= 7'd0;
-                        tick_1Hz <= 1'b1;
-                    end else count_1Hz <= count_1Hz + 1'b1;
-            end else count_100Hz <= count_100Hz + 1'b1; 
+            tick_100Hz <= 0; 
+            tick_1Hz <= 0;
+            tick_1kHz <= 0;
+            if(count_1kHz == param_1kHz -1 ) begin
+                count_1kHz <= 16'd0;
+                tick_1kHz <= 1'b1;
+                if(count_100Hz == param_100Hz -1) begin
+                    count_100Hz <= 18'd0;
+                    tick_100Hz <= 1'b1;
+                        if(count_1Hz == param_1Hz -1)begin
+                            count_1Hz <= 7'd0;
+                            tick_1Hz <= 1'b1;
+                        end else count_1Hz <= count_1Hz + 1'b1;
+                end else count_100Hz <= count_100Hz + 1'b1; 
+            end else count_1kHz <= count_1kHz + 1'b1;
         end
 
     end
@@ -77,22 +87,21 @@ endmodule
 module switch_posedge #(parameter WIDTH = 3)(
     input wire [WIDTH-1:0] switch, 
     input wire clk, rst_n,
-    input wire tick_100Hz,
     output wire sw4_alarm, 
     output wire sw5_snooze, 
     output wire sw6_start_cdwn
 );
-    reg [WIDTH-1:0] delay; 
-    always@(posedge clk or negedge rst_n)begin
+    reg delay; 
+    always@(posedge clk or negedge rst_n)begin 
       if(!rst_n) delay <= 0;
-      else if(tick_100Hz == 1'b1) begin 
-        delay <= switch;
-      end
+      else begin 
+        delay <= switch [1];
+      end 
     end
     // sw4 - turn off (1)
     assign sw4_alarm = switch[0] ; 
     // sw5 - snooze (1)
-    assign sw5_snooze = switch[1] ; 
+    assign sw5_snooze = switch[1] & ~delay; 
     // countdown 1:start count
-    assign sw6_start_cdwn = switch[2] & ~delay [2]; 
+    assign sw6_start_cdwn = switch[2]; 
 endmodule
