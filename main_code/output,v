@@ -15,7 +15,7 @@ module display_unit (
     assign b2_tens = bin2 / 10;
     assign b2_ones = bin2 % 10;
     reg [3:0] anode_reg;
-assign anode = anode_reg;
+    assign anode = anode_reg;
 
    always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
