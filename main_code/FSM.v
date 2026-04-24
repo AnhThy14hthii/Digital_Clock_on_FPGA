@@ -33,9 +33,9 @@ module FSM #(parameter WIDTH = 3 )(
 
 
     //time out 60s
-    reg [12:0] time_out;
+    reg [5:0] time_out;
     always@(posedge clk or negedge rst_n) begin
-        if(!rst_n) time_out <= 13'd0; 
+        if(!rst_n) time_out <= 6'd0; 
         else if(state == RINGING) begin
             if(tick_1Hz) begin
                 time_out <= time_out + 1'b1;
@@ -73,7 +73,7 @@ module FSM #(parameter WIDTH = 3 )(
                     if(bt1_select) next_state = IDLE;
                 end
                 RINGING: begin
-                    if(time_out >= 13'd60) next_state = IDLE;
+                    if(time_out >= 6'd60) next_state = IDLE;
                     else begin
                         if(sw4_alarm) next_state = IDLE;
                         else if(sw5_snooze) next_state = SNOOZE;
