@@ -24,7 +24,7 @@ The design focuses on key digital hardware concepts, including synchronous syste
 | **EDA Tool** | Microchip Libero SoC |
 | **Simulator** | ModelSim |
  
-![FPGA Board](images/Microchip.png)
+(images/Microchip.png)
  
 
  
@@ -43,11 +43,11 @@ The design focuses on key digital hardware concepts, including synchronous syste
  
 The design is organized into four modular blocks inside `top.v`:
  
-![Top-level Interface](diagrams/Digital_clock-1_interface.png)
+(diagrams/Digital_clock-1_interface.png)
  
 ### Block Diagram
  
-![Internal Architecture](diagrams/Digital_clock-2_Top.png)
+(diagrams/Digital_clock-2_Top.png)
  
 | Block | Role |
 |-------|------|
@@ -62,7 +62,7 @@ The design is organized into four modular blocks inside `top.v`:
  
 ### INPUT Block
  
-![Input Block](diagrams/Digital_clock-3_Input.png)
+(diagrams/Digital_clock-3_Input.png)
  
 Receives raw `switch[4:0]` and `bt[1:0]` signals from the PolarFire board, performs digital debouncing, and outputs clean internal control signals along with `tick_1Hz` and `tick_1kHz` for the rest of the system.
  
