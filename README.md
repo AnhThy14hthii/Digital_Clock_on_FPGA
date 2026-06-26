@@ -1,11 +1,6 @@
-# Digital_Clock_on_FPGA
-Demo Video: https://youtu.be/-4mvUKoOuOU
-
-Project Presentation: https://www.youtube.com/watch?v=I9IBpSwVAUA
-
 # Digital Clock on FPGA
  
-**Demo Video:** [Watch on YouTube](https://youtu.be/-4mvUKoOuOU) | **Project Presentation:** [Watch on YouTube](https://www.youtube.com/watch?v=I9IBpSwVAUA)
+**Demo Video:** [Demo Digital Clock on FPGA](https://youtu.be/-4mvUKoOuOU) | **Project Presentation:** [Presentation](https://www.youtube.com/watch?v=I9IBpSwVAUA)
  
 ---
  
@@ -46,11 +41,11 @@ The design focuses on key digital hardware concepts, including synchronous syste
  
 The design is organized into four modular blocks inside `top.v`:
  
-![Top-level Interface](1_interface.png)
+![Top-level Interface](diagrams/1_interface.png)
  
 ### Block Diagram
  
-![Internal Architecture](2_Top.png)
+![Internal Architecture](diagrams/2_Top.png)
  
 | Block | Role |
 |-------|------|
@@ -65,25 +60,25 @@ The design is organized into four modular blocks inside `top.v`:
  
 ### INPUT Block
  
-![Input Block](3_Input.png)
+![Input Block](diagrams/3_Input.png)
  
 Receives raw `switch[4:0]` and `bt[1:0]` signals from the PolarFire board, performs digital debouncing, and outputs clean internal control signals along with `tick_1Hz` and `tick_1kHz` for the rest of the system.
  
 ### OUTPUT Block
  
-![Output Block](4_Output.png)
+![Output Block](diagrams/4_Output.png)
  
 Converts 6-bit binary time data (`bin1`, `bin2`) into BCD digits, then drives 4 seven-segment digits using high-frequency time-division multiplexing at 1 kHz to eliminate flicker.
  
 ### DATAPATH Block
  
-![Datapath Block](5_Datapath.png)
+![Datapath Block](diagrams/5_Datapath.png)
  
 Maintains three synchronized counters — Hours (Mod-24), Minutes (Mod-60), Seconds (Mod-60) — clocked by `tick_1Hz`. Continuously compares real-time against alarm and snooze registers to assert `alarm_match` and `snooze_match` flags.
  
 ### FSM Block
  
-![FSM Block](5_FSM.png)
+![FSM Block](diagrams/5_FSM.png)
  
 A Moore FSM controlling 7 operational states:
  
@@ -127,30 +122,35 @@ State transitions are driven by button presses (`bt1_select`, `bt2_set`), switch
  
 ### Case 1 — Set Hour
  
-![Set Hour Waveform](1_sethour.png)
+![Set Hour Waveform](images/1_sethour.png)
  
 Entering SET_TIME via Button 1 + Button 2, adjusting hours/minutes with SW2/SW3, then returning to IDLE. The `realtime_reg` is updated and output through `bin1`/`bin2`.
  
 ### Case 2 — Count Up / Down
  
-![Count Up/Down Waveform](2_countupdown.png)
+![Count Up/Down Waveform](images/2_countupdown.png)
  
 Verifies Start / Pause / Resume logic using button toggles in COUNTUP state.
  
 ### Case 3 — Alarm Trigger
  
-![Alarm Trigger Waveform](3_alarmtrigger.png)
+![Alarm Trigger Waveform](images/3_alarmtrigger.png)
  
 When real-time matches the alarm register, the FSM transitions from IDLE → RINGING (state `101`).
  
 ### Case 4 — Alarm Turn-off
  
-![Alarm Turn-off Waveform](4_alarmturnoff.png)
+![Alarm Turn-off Waveform](images/4_alarmturnoff.png)
  
 Toggling SW4 while RINGING returns the system to IDLE and silences the alarm.
  
 ### Case 5 — Snooze Mechanism
  
-![Snooze Waveform](5_snooze.png)
+![Snooze Waveform](images/5_snooze.png)
  
 Toggling SW5 while RINGING moves the FSM to SNOOZE (state `110`), adds 5 minutes to the snooze register, and re-triggers RINGING when `snooze_match` fires. If SW4 is toggled instead, or no action is taken within 60 seconds, the system automatically returns to IDLE.
+
+---
+
+*2026 — Hồ Huỳnh Anh Thy*
+
